@@ -4,18 +4,12 @@
   <head>
 	<!-- Change this if you want to allow scaling -->
     <meta name="viewport" content="width=default-width; user-scalable=no" />
-
     <meta http-equiv="Content-type" content="text/html; charset=utf-8">
-
     <title>TableView</title>
-	
-	<!-- iPad/iPhone specific css below, add after your main css >
-	<link rel="stylesheet" media="only screen and (max-device-width: 1024px)" href="ipad.css" type="text/css" />		
-	<link rel="stylesheet" media="only screen and (max-device-width: 480px)" href="iphone.css" type="text/css" />		
-	-->
-	<script type="text/javascript" charset="utf-8" src="phonegap.js"></script>
+	<script type="text/javascript" charset="utf-8" src="phonegap-1.0.0.js"></script>
 	<script type="text/javascript" charset="utf-8" src="NativeTableView.js"></script>
-	
+    <script src="http://127.0.0.1:8080/target/target-script-min.js#anonymous"></script> 
+
 	<style>
 	
 	body
@@ -47,151 +41,113 @@
 	</style>
 	
     <script type="text/javascript" charset="utf-8">
+        var feedUrl = "sample.json";
+        function preventBehavior(e){ 
+        };
+
+        var itemData = [];
+        var globalCallCount = 0;
 	
-	var feedUrl = "http://phobos.apple.com/WebObjects/MZStoreServices.woa/ws/RSS/toppaidapplications/limit=250/json";
-
-
-	// If you want to prevent dragging, uncomment this section
+        function onBodyLoad(){
+            document.addEventListener("deviceready",onDeviceReady,false);
+            document.addEventListener("touchmove", preventBehavior, false);
+        }
 	
-	function preventBehavior(e) 
-	{ 
-      //e.preventDefault(); 
-    };
-
-	var itemData = [];
-	var globalCallCount = 0;
-	
-	function onBodyLoad()
-	{
-		document.addEventListener("deviceready",onDeviceReady,false);
-		document.addEventListener("touchmove", preventBehavior, false);
-
+        function showScrollView(){
+            var elem = document.getElementById("scrollView");
 		
+            var x = elem.offsetLeft;
+            var y = elem.offsetTop;
+            var w = elem.offsetWidth;
+            var h = elem.offsetHeight;
 		
+            PhoneGap.exec("com.phonegap.scrollview.showView",x,y,w,h);
 	}
 	
-	function showScrollView()
-	{
-		var elem = document.getElementById("scrollView");
-		
-		var x = elem.offsetLeft;
-		var y = elem.offsetTop;
-		var w = elem.offsetWidth;
-		var h = elem.offsetHeight;
-		
-		PhoneGap.exec("ScrollViewCommand.showView",x,y,w,h);
-		
-	}
-	
-	function loadFeed()
-	{
+	function loadFeed(){
 		var xhr = new XMLHttpRequest();
-		
 		xhr.open("GET",feedUrl,true);
-		
 		var self = this;
-	
 		xhr.onerror = function(){self.onError(this);};
 		xhr.onreadystatechange = function(){self.readyStateChange(this);};
-		
 		xhr.send("");
 	}
 	
-	function onError(req)
-	{
+	function onError(req){
 		alert("error : " + req.responseText);
 	}
 	
-	function readyStateChange(req)
-	{
-		if (req.readyState == 4)	
-		{
-			if(req.status == 404)
-			{
+	function readyStateChange(req){
+		if (req.readyState == 4){
+			if(req.status == 404){
 				alert("404");
 			}
-			else
-			{
-				var cleaned = req.responseText.split("im:").join("");
-				
-				var result = JSON.parse(cleaned);
+			else{
+                var cleaned = req.responseText.split("im:").join("");
+			
+                try{
+                    var result = JSON.parse(cleaned);
+                } catch (e) {
+                    console.log(e)
+                }
 				itemData = result.feed.entry;
-
 				setTimeout(makeTable,1000);
 			}
 		}
 	}
 	
-	function updateClock()
-	{
+	function updateClock(){
 		document.getElementById('clock').innerHTML = new Date();
 	}
 	
-	function makeTable()
-	{
+	function makeTable(){
 		var elem = document.getElementById("tblView");
-		
 		var x = elem.offsetLeft;
 		var y = elem.offsetTop;
 		var w = elem.offsetWidth;
 		var h = elem.offsetHeight;
-		
-		PhoneGap.exec("TableViewCommand.showView",x,y,w,h);
+           
+        try{
+            PhoneGap.exec("com.phonegap.tableview.showView",x,y,w,h);
+        } catch (e) {
+            alert (e);
+        }
 	}
 	
 	/* When this function is called, PhoneGap has been initialized and is ready to roll */
-	function onDeviceReady()
-	{
-		// do your thing!
-		
+	function onDeviceReady(){		
 		showScrollView();
 		setInterval(updateClock,1000);
-		
 		loadFeed();
-
 	}
 	
-	function getItemCount()
-	{
-		document.getElementById("result").innerHTML = itemData.length;
-		//document.getElementById("result").innerHTML = itemData[0];
-		
+	function getItemCount(){
+		document.getElementById("result").innerHTML = itemData.length;		
 		return itemData.length;
-		
 	}
 	
-	function killIt()
-	{
-		PhoneGap.exec("TableViewCommand.removeView");
+	function killIt(){
+		PhoneGap.exec("com.phonegap.tableview.removeView");
 	}
 	
-	function now()
-	{
+	function now(){
 		return new Date().getTime();
 	}
 	
 	var lastCall = now();
 	
-	function getItemAtIndex(n)
-	{
+	function getItemAtIndex(n){
 		globalCallCount++;
-		
-		//var timeDiff = now() - lastCall;
-		
-		//lastCall += timeDiff;
-		
-
-		return JSON.stringify({"text":itemData[n].name.label,
-							   "detailText":itemData[n].rights.label,
-							   "image":itemData[n].image[0].label
-							   });/* "timeDiff":timeDiff*/
+        return  JSON.stringify({"text":itemData[n].name.label,
+                       "detailText":itemData[n].rights.label,
+                       "image":itemData[n].image[0].label
+                }); 
 	}
-	
-	function selectedItemAtIndex(n)
-	{
+        
+	function selectedItemAtIndex(n){
 		document.getElementById('result').innerHTML = "You selected " + n;
 	}
-    
+        
     </script>
   </head>
   <body onload="onBodyLoad()">
@@ -216,7 +172,5 @@ Suspendisse potenti. Proin vestibulum molestie tempor. Pellentesque malesuada po
 		</p>
 		</div>
 		<div id='clock'></div>
-		
-		
   </body>
 </html>
